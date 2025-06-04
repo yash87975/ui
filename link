@@ -1,1 +1,305 @@
-http://localhost:5177/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Meme Generator</title>
+<style>
+  :root {
+    --primary-color: #4f46e5;
+    --secondary-color: #6366f1;
+    --background-color: #f9fafb;
+    --text-color: #1f2937;
+    --accent-color: #4338ca;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  body {
+    margin: 0;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+  }
+  h1 {
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    text-align: center;
+  }
+  .container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem 1.5rem 2rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  input[type="file"],
+  input[type="text"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+  }
+  input[type="file"]:focus,
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+  }
+  button {
+    margin-top: 1rem;
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  button:disabled {
+    background: #a5b4fc;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background: var(--secondary-color);
+  }
+  #meme-container {
+    position: relative;
+    margin-top: 2rem;
+    text-align: center;
+    user-select: none;
+  }
+  #meme-image {
+    width: 100%;
+    border-radius: 12px;
+    max-height: 350px;
+    object-fit: contain;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    background: #e5e7eb;
+  }
+  .meme-text {
+    position: absolute;
+    left: 50%;
+    width: 90%;
+    color: white;
+    font-weight: 900;
+    font-size: 2rem;
+    text-transform: uppercase;
+    text-shadow:
+      -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000,
+      2px 2px 0 #000;
+    letter-spacing: 2px;
+    user-select: text;
+    cursor: text;
+    transform: translateX(-50%);
+    padding: 0 0.3rem;
+  }
+  #top-text {
+    top: 12px;
+  }
+  #bottom-text {
+    bottom: 12px;
+  }
+  .ai-suggestions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .ai-btn {
+    flex: 1;
+    background: var(--secondary-color);
+    border: none;
+    border-radius: 8px;
+    padding: 0.3rem 0.5rem;
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+  .ai-btn:hover {
+    background: var(--accent-color);
+  }
+  footer {
+    margin-top: auto;
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-align: center;
+    padding: 1rem 0 0;
+  }
+  @media (max-width: 480px) {
+    .container {
+      max-width: 100%;
+      padding: 1rem;
+    }
+    .meme-text {
+      font-size: 1.5rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <h1>AI Meme Generator</h1>
+  <div class="container">
+    <label for="image-upload">Upload an Image</label>
+    <input type="file" id="image-upload" accept="image/*" />
+
+    <label for="top-text-input">Top Text</label>
+    <input type="text" id="top-text-input" placeholder="Enter top text or use AI helper" maxlength="50" />
+
+    <div class="ai-suggestions" id="top-ai-suggestions"></div>
+
+    <label for="bottom-text-input">Bottom Text</label>
+    <input type="text" id="bottom-text-input" placeholder="Enter bottom text or use AI helper" maxlength="50" />
+
+    <div class="ai-suggestions" id="bottom-ai-suggestions"></div>
+
+    <button id="download-btn" disabled>Download Meme</button>
+
+    <div id="meme-container" aria-label="Meme preview">
+      <img id="meme-image" alt="Meme preview image" src="" />
+      <div id="top-text" class="meme-text" contenteditable="true" aria-label="Top meme text"></div>
+      <div id="bottom-text" class="meme-text" contenteditable="true" aria-label="Bottom meme text"></div>
+    </div>
+  </div>
+  <footer>
+    &copy; 2024 AI Meme Generator. All rights reserved.
+  </footer>
+<script>
+  const imageUpload = document.getElementById('image-upload');
+  const memeImage = document.getElementById('meme-image');
+  const topTextInput = document.getElementById('top-text-input');
+  const bottomTextInput = document.getElementById('bottom-text-input');
+  const topTextDiv = document.getElementById('top-text');
+  const bottomTextDiv = document.getElementById('bottom-text');
+  const downloadBtn = document.getElementById('download-btn');
+  const topAISuggestions = document.getElementById('top-ai-suggestions');
+  const bottomAISuggestions = document.getElementById('bottom-ai-suggestions');
+
+  const sampleMemesTop = [
+    'When you realize',
+    'That moment when',
+    'The face you make',
+    'Me trying to',
+    'When you accidentally',
+    'Expectation vs Reality',
+  ];
+  const sampleMemesBottom = [
+    'this is actually working',
+    'you forgot your keys',
+    'the code finally runs',
+    'you drop your phone',
+    'Monday morning hits hard',
+    'success tastes sweet',
+  ];
+
+  function setImageFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      memeImage.src = e.target.result;
+      memeImage.style.display = 'block';
+      downloadBtn.disabled = false;
+      resetTexts();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetTexts() {
+    topTextInput.value = '';
+    bottomTextInput.value = '';
+    topTextDiv.textContent = '';
+    bottomTextDiv.textContent = '';
+    clearAISuggestions();
+  }
+
+  function clearAISuggestions() {
+    topAISuggestions.innerHTML = '';
+    bottomAISuggestions.innerHTML = '';
+  }
+
+  function createAIButtons(container, textArray, targetInput) {
+    container.innerHTML = '';
+    textArray.forEach(text => {
+      const btn = document.createElement('button');
+      btn.textContent = text;
+      btn.className = 'ai-btn';
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        targetInput.value = text;
+        updateTextDivs();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function updateTextDivs() {
+    topTextDiv.textContent = topTextInput.value.toUpperCase();
+    bottomTextDiv.textContent = bottomTextInput.value.toUpperCase();
+  }
+
+  imageUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setImageFromFile(file);
+    } else {
+      alert('Please upload a valid image file.');
+      e.target.value = '';
+    }
+  });
+
+  topTextInput.addEventListener('input', updateTextDivs);
+  bottomTextInput.addEventListener('input', updateTextDivs);
+
+  // Also update editable divs changes back to inputs
+  topTextDiv.addEventListener('input', () => {
+    topTextInput.value = topTextDiv.textContent;
+  });
+  bottomTextDiv.addEventListener('input', () => {
+    bottomTextInput.value = bottomTextDiv.textContent;
+  });
+
+  createAIButtons(topAISuggestions, sampleMemesTop, topTextInput);
+  createAIButtons(bottomAISuggestions, sampleMemesBottom, bottomTextInput);
+
+  // Download meme as PNG using html2canvas
+  downloadBtn.addEventListener('click', () => {
+    if (!memeImage.src) return;
+    downloadBtn.disabled = true;
+    html2canvas(document.getElementById('meme-container')).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'ai-meme.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      downloadBtn.disabled = false;
+    }).catch(() => {
+      alert('Failed to generate image. Please try again.');
+      downloadBtn.disabled = false;
+    });
+  });
+
+  // Dynamically load html2canvas script for download functionality
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  script.integrity = 'sha384-q3z2ITkSWyQcmlsGvReG+OJUQ3lsFuXioHcWbTeP6FB5Dr+S/dXh0mGTaOl7H8ad';
+  script.crossOrigin = 'anonymous';
+  document.body.appendChild(script);
+</script>
+</body>
+</html>
+
+
